@@ -85,11 +85,15 @@ deepseek = [
 progress = [
     "tqdm>=4.66",
 ]
+media = [
+    "boto3>=1.40.60",
+]
 all = [
     "pydantic-ai>=1.32.0",
     "google-genai>=1.49.0",
     "openai>=1.66.2",
     "tqdm>=4.66",
+    "boto3>=1.40.60",
 ]
 docs = [
     "mkdocs>=1.5.0",
@@ -115,6 +119,7 @@ dev = [
     "google-genai>=1.49.0",  # Required for Gemini tests
     "openai>=1.66.2",  # Required for OpenAI/OpenRouter tests
     "tqdm>=4.66",  # Required for progress=True tests
+    "boto3>=1.40.60",  # Required for media client construction tests
     "prek>=0.4.0",
 ]
 

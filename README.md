@@ -168,10 +168,67 @@ extras for the providers you use:
 | `gemini` | `GeminiModel`, `GeminiCachedModel`, `llm("gemini:…")` | `google-genai>=1.49.0` |
 | `pydantic-ai` | `PydanticAIStrategy` | `pydantic-ai>=1.32.0` |
 | `progress` | tqdm bars for `progress=True` | `tqdm>=4.66` |
+| `media` | Image/video uploads to S3 or S3-compatible R2 storage | `boto3` |
 | `all` | All of the above | All of the above |
 
 `CallableStrategy`, `FakeStrategy`, and custom `LLMCallStrategy` subclasses need
 no extra. Supported on Python 3.11–3.15, tested on Linux and macOS.
+
+## Image and video uploads
+
+Install `pip install 'llm-minder[media]'` to upload local images or videos to an
+existing S3 or Cloudflare R2 bucket. Import the optional helper explicitly:
+
+```python
+from llm_minder.media import S3MediaUploader
+
+async def upload_and_use(path, consume_url):
+    # Credentials come from boto3's standard AWS credential chain.
+    async with S3MediaUploader.from_boto3("your-bucket") as uploader:
+        media = await uploader.upload(path)
+        try:
+            await consume_url(media.url)  # Your real application/provider client.
+        finally:
+            await uploader.delete(media)
+```
+
+`UploadedMedia` contains `bucket`, `key`, `url`, `content_type`, and `size` in
+bytes. MIME types are inferred from the filename or supplied with
+`upload(path, content_type="video/mp4")`; only `image/*` and `video/*` are accepted.
+This is MIME labeling, not content inspection or format conversion. Each upload
+gets a unique object key. Files stream from disk through bounded worker threads
+(`max_concurrency=4` by default), using a single PUT for files up to 5 GiB.
+Cancellation waits for its storage worker and attempts cleanup before releasing
+its concurrency slot, so cancellation may take as long as the storage request.
+Failed uploads attempt owned-object cleanup; cleanup failures remain visible on
+the original exception. Successful uploads remain until explicitly deleted;
+closing the uploader does not delete them. Keep the uploader alive until cleanup.
+
+By default the URL is a private, presigned GET URL valid for `expires_in=3600`
+seconds. Treat it as a bearer credential and allow enough lifetime for the
+consumer to fetch it. Set `public_base_url="https://media.example.com/assets"`
+only when that bucket/CDN path already exposes your objects publicly: the helper
+does not change bucket access policies. Public object keys are URL-escaped.
+Use least-privilege bucket permissions for PUT, GET/HEAD and DELETE; conditional
+PUT/DELETE support is required to avoid overwriting or removing another object.
+
+For R2, pass `endpoint_url="https://ACCOUNT_ID.r2.cloudflarestorage.com"` and
+`region_name="auto"` to `from_boto3`. Supply credentials through environment
+variables or the SDK credential chain, never committed source. An injected
+`S3MediaUploader(client, "your-bucket")` leaves that client open; `from_boto3`
+owns and closes its client. Use the uploader in one asyncio event loop.
+
+Try the [runnable upload-and-cleanup example](https://github.com/liconstudiolab/llm-minder/blob/main/examples/example_media_upload.py):
+
+```bash
+uv sync --extra media
+uv run python examples/example_media_upload.py photo.png clip.mp4 --bucket your-bucket --hold-seconds 60
+```
+
+The example makes real storage requests and deletes its objects afterward.
+Uploading a video does **not** imply a model can consume it: choose a compatible
+provider/model, use its media message format, and keep the URL accessible until
+the request finishes. This helper does not change model or screening workflows.
 
 ## Providers
 

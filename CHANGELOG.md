@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Optional `llm_minder.media.S3MediaUploader` and `UploadedMedia` for asynchronous
+  local image/video uploads to S3 or S3-compatible R2 storage (`media` extra).
+  Files stream through bounded workers with unique conditional object writes,
+  private expiring GET URLs or escaped public URLs, explicit deletion, and
+  cancellation-safe best-effort cleanup. Single-PUT uploads support up to 5 GiB;
+  media format conversion and provider/model video support are not implied.
+- A runnable `examples/example_media_upload.py` that uploads real files using
+  SDK-managed credentials and cleans up its uploaded objects.
+
 ## [1.0.0rc1] - 2026-11-04
 
 The release candidate for 1.0.0, the first release covered by the

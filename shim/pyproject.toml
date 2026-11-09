@@ -29,6 +29,7 @@ openai = ["llm-minder[openai]==1.0.0rc1"]
 openrouter = ["llm-minder[openrouter]==1.0.0rc1"]
 deepseek = ["llm-minder[deepseek]==1.0.0rc1"]
 progress = ["llm-minder[progress]==1.0.0rc1"]
+media = ["llm-minder[media]==1.0.0rc1"]
 all = ["llm-minder[all]==1.0.0rc1"]
 
 [project.urls]
